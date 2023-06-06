@@ -83,6 +83,18 @@ class TOI():
         self.comment = toirow['Public Comment']
         self.tic = toirow['TIC']
 
+def earth_location(loc):
+    '''Takes an inputted location coordinate set from exec
+    and returns an actual EarthLocation object
+
+    Args:
+        loc (list(float, float, float)): inputted location
+    
+    Returns:
+        eloc (EarthLocation): corresponding EarthLocation object
+    '''
+    return EarthLocation(lat=loc[0]*u.deg, lon=loc[1]*u.deg, height=loc[2]*u.m)
+
 def calculate_transit_times(toi, fraction=1, timerange=(2457000, 2461000), mode='mid'):
     '''A function that calculates all the possible transit times in the 
     BJD scale for the entire range of TESS data for the given fraction for

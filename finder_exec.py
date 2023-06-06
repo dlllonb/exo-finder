@@ -23,12 +23,40 @@ def transit_predictor():
             continue
     
     # chose not to use defaults, now set them all
-    new_loc = None
-    while new_loc != 'y' and new_loc != 'n':
+    location = [38.29, -122, 56]
+    while True:
         new_loc = input("Default location to SEO? (y/n): ")
-    if new_loc == 'n':
-        print('TODO')
-        return
+        if new_loc == 'y':
+            break
+        elif new_loc == 'n':
+            while True:
+                nlat = input("Latitude: ")
+                try:
+                    nlat1 = float(nlat)
+                    location[0] = nlat1
+                    break
+                except:
+                    continue
+            while True:
+                nlong = input("Longitude: ")
+                try:
+                    nlong1 = float(nlong)
+                    location[1] = nlong1
+                    break
+                except:
+                    continue
+            while True:
+                nh = input("Height: ")
+                try:
+                    nh1 = float(nh)
+                    location[2] = nh1
+                    break
+                except:
+                    continue 
+            break 
+        else:
+            continue
+    elocation = code.earth_location(location)
     
     timerange = [-1, -1]
     while timerange[0] == -1:
@@ -42,6 +70,7 @@ def transit_predictor():
         end = input("JD end date: ")
         try:
             flt = float(end)
+            assert(flt > timerange[0])
             timerange[1] = flt
         except:
             continue
@@ -100,13 +129,13 @@ def transit_predictor():
     
     print('')
     print('Currently selected parameters are:')
-    print(f'  Location : SEO')
+    print(f'  Location : {location}')
     print(f'  Time Range : {timerange} day JD')
     print(f'  UTC offset : {utcoffset} hours')
     print(f'  Dividing Fraction : {minfrac}')
     print(f'  Period Range : {periods} days')
     print(f'  Minimum Transit Depth : {mindepth}')
-    print(f'  Minimum Transit Altitude : {minalt}')
+    print(f'  Minimum Transit Altitude : {minalt} deg')
 
     while True:
         confirm = input("Confirm running with these parameters? (y/n): ")
@@ -118,9 +147,9 @@ def transit_predictor():
         else:
             continue
     
-    result = code.find_all_transits(timerange=timerange, utcoffset=utcoffset, 
-                                    minfrac=minfrac, periods=periods,
-                                    mindepth=mindepth, minalt=minalt)
+    result = code.find_all_transits(location=elocation, timerange=timerange, 
+                                    utcoffset=utcoffset, minfrac=minfrac, 
+                                    periods=periods, mindepth=mindepth, minalt=minalt)
     print("File 'transtis.csv' has been created.")
     return 
 
