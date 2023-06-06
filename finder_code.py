@@ -82,7 +82,16 @@ class TOI():
         self.tmag = toirow['TMag Value']
         self.comment = toirow['Public Comment']
         self.tic = toirow['TIC']
+        self.infodict = {'transit0':self.transit0, 'RA':self.ra, 'DEC': self.dec, 
+                         'period':self.period, 'duration': self.duration, 'TIC':self.tic,
+                         'depth':self.depth, 'tmag':self.tmag, 'comment':self.comment}
 
+    def __repr__(self):
+        return f'TOI {self.name}: {self.infodict}'
+    
+    def __str__(self):
+        return f'TOI {self.name}'
+    
 # functions used for finding all upcoming TESS transits
 def earth_location(loc):
     '''Takes an inputted location coordinate set from exec
@@ -436,4 +445,58 @@ def find_all_transits(location=SEO,
     save_df_to_pdf(mainframe)
     return mainframe
 
-# functions used for plotting a specific transit
+# function used for plotting a specific transit
+def toi_plot_transit(toi, ingress_time, utcoffset=-7, location=SEO):
+    '''Makes a pretty plot of the target location and the sun and moon
+    locations over the course of a given tranist.
+    
+    Args:
+        toi (TOI, float): either a TOI object or a float TOI ID
+        ingress_time (float): JD time of ingress
+        location (EarthLocation): location of observatory
+        utcoffset (int): hour difference from UTC
+        
+    Returns:
+        displays a graph and saves it to 'transplot.png'
+    '''
+    if isinstance(toi, float):
+        toi = TOI(toi)
+    
+    # create star line
+    duration = toi.duration
+    ra = toi.ra
+    dec = toi.dec
+    tjd = Time(ingress_time, format='jd')
+    coords = SkyCoord(ra, dec, unit="deg")
+    delta = np.linspace(-5, duration+5, 1000)*u.hour
+    times = delta + tjd
+    toi_altazs = coords.transform_to(AltAz(obstime=times, location=location))
+    plt.scatter(delta, toi_altazs.alt, label=str(toi), c=toi_altazs.az, lw=0, s=8, cmap='viridis')
+    
+    # create line for moon
+    frame = AltAz(obstime=times, location=location)
+    moon_locs = get_moon(times)
+    moon_altaz = moon_locs.transform_to(frame)
+    plt.plot(delta, moon_altaz.alt, color=[0.75]*3, ls='--', label='Moon')
+    
+    # create line for sun
+    frame = AltAz(obstime=times, location=location)
+    sun_locs = get_sun(times)
+    sun_altaz = sun_locs.transform_to(frame)
+    plt.plot(delta, sun_altaz.alt, color='r', ls='-', label='Sun')
+    
+    # format plot attributes and save and show plot
+    plt.colorbar().set_label('Target Azimuth [deg]')
+    plt.axvspan(0, duration, alpha=.25, color='grey')
+    local = tjd + (utcoffset*u.hour)
+    local.format = 'fits'
+    local2 = str(local).split('T')
+    local3 = ' at '.join(local2)
+    plt.xlabel(f'Hours since {local3} Ingress')
+    plt.ylabel('Altitude [deg]')
+    plt.title(f'Altitude of {toi}')
+    plt.legend(loc='upper left')
+    plt.savefig('transplot.png')
+    plt.show()
+    return 
+

@@ -8,6 +8,7 @@ def help():
     print("  help : shows this page")
     print("  quit : quits the program")
     print("  predictor: starts the transit predictor")
+    print("  plotter: starts the transit plotter")
     print("")
 
 def transit_predictor():
@@ -186,6 +187,96 @@ def transit_predictor():
     print("File 'transtis.csv' and 'transits.pdf' have been created.")
     return 
 
+def transit_plotter():
+    print('-----------------------------------')
+    print('Transit plotter shows a nice chart of a given transit.')
+    print('-----------------------------------')
+    location = [38.29, -122, 56]
+    while True:
+        new_loc = input("Default location to SEO? (y/n): ")
+        if new_loc == 'y':
+            break
+        elif new_loc == 'n':
+            while True:
+                nlat = input("Latitude: ")
+                if nlat == 'q' or nlat == 'quit':
+                    return
+                try:
+                    nlat1 = float(nlat)
+                    location[0] = nlat1
+                    break
+                except:
+                    continue
+            while True:
+                nlong = input("Longitude: ")
+                if nlong == 'q' or nlong == 'quit':
+                    return
+                try:
+                    nlong1 = float(nlong)
+                    location[1] = nlong1
+                    break
+                except:
+                    continue
+            while True:
+                nh = input("Height: ")
+                if nh == 'q' or nh == 'quit':
+                    return
+                try:
+                    nh1 = float(nh)
+                    location[2] = nh1
+                    break
+                except:
+                    continue 
+            break 
+        elif new_loc == 'q' or new_loc == 'quit':
+            return
+        else:
+            continue
+    elocation = code.earth_location(location)
+
+    tid = -1
+    while tid == -1:
+        tid1 = input("TOI ID: ")
+        if tid1 == 'q' or tid1 == 'quit':
+            return
+        try: 
+            tid2 = float(tid1)
+            tid = tid2
+        except:
+            continue
+    
+    jdt = -1
+    while jdt == -1:
+        jdt1 = input("Ingress Time JD: ")
+        if jdt1 == 'q' or jdt1 == 'quit':
+            return
+        try: 
+            jdt2 = float(jdt1)
+            jdt = jdt2
+        except:
+            continue
+
+    utcoffset = 'x'
+    while utcoffset == 'x':
+        offset = input("Hours offset from UTC: ")
+        if offset == 'q' or offset == 'quit':
+            return
+        try: 
+            hours = int(offset)
+            utcoffset = hours
+        except:
+            continue
+
+    print(f'Plotting transit of {tid} at {jdt} as seen from {location}')
+    try:
+        code.toi_plot_transit(tid, jdt, utcoffset, elocation)
+    except:
+        print('Parameters are incompatible with program, please try again.')
+        return
+    
+    print('Output png generated.')
+    return
+
 # main loop for the program overall 
 while True:
     command = input("c: ")
@@ -196,7 +287,7 @@ while True:
     elif command == "predictor":
         transit_predictor()
     elif command == "plotter":
-        pass
+        transit_plotter()
     else:
         print("Unknown command... type help to see list.")
     
