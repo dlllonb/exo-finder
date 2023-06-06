@@ -82,9 +82,11 @@ class TOI():
         self.tmag = toirow['TMag Value']
         self.comment = toirow['Public Comment']
         self.tic = toirow['TIC']
+        self.sectors = toirow['Sectors']
         self.infodict = {'transit0':self.transit0, 'RA':self.ra, 'DEC': self.dec, 
                          'period':self.period, 'duration': self.duration, 'TIC':self.tic,
-                         'depth':self.depth, 'tmag':self.tmag, 'comment':self.comment}
+                         'depth':self.depth, 'tmag':self.tmag, 'sectors':self.sectors,
+                         'comment':self.comment}
 
     def __repr__(self):
         return f'TOI {self.name}: {self.infodict}'
