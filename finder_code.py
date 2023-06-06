@@ -60,14 +60,14 @@ class TOI():
     and is worked with by the important functions later on. 
     '''
     
-    def __init__(self, toi, datatable=None):
+    def __init__(self, toi, datatable='none'):
         '''Pull information on a given TOI from the database
 
         Args:
             toi (float, str): TOI ID for the target star
             datatable (DataFrame): the full TESS df, or None and load it in
         '''
-        if datatable == None:
+        if isinstance(datatable, str):
             datatable = load_tess_data()
             
         toirow = datatable.iloc[(datatable[datatable['Full TOI ID'] == toi].index)[0]]
@@ -354,5 +354,7 @@ def find_all_transits(location=SEO,
     mainframe.sort_values('Time Ingress JD', inplace=True)
     mainframe.reset_index(drop=True, inplace=True)
     
+    display(mainframe)
+    mainframe.to_csv('transits.csv', index=False)
     return mainframe
 
