@@ -254,6 +254,8 @@ def decimal_to_fraction(decimal):
     fraction = Fraction(absdec).limit_denominator(20)
     mixed_fraction = f'{neg}{fraction.numerator // fraction.denominator} \
     {fraction.numerator % fraction.denominator}/{fraction.denominator}'
+    if (mixed_fraction[-1]=='1'):
+        return mixed_fraction[:-4]
     return mixed_fraction
 
 def generate_all_transits(toi_obj, location, timerange, 
