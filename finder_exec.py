@@ -21,7 +21,7 @@ def transit_predictor():
         if default == 'y':
             print('Running...')
             result = code.find_all_transits()
-            print("File 'transtis.csv' has been created.")
+            print("File 'transtis.csv' and 'transits.pdf' have been created.")
             return
         elif default == 'n': 
             break 
@@ -183,7 +183,7 @@ def transit_predictor():
                                     utcoffset=utcoffset, minfrac=minfrac, 
                                     periods=periods, mindepth=mindepth, 
                                     minalt=minalt)
-    print("File 'transtis.csv' has been created.")
+    print("File 'transtis.csv' and 'transits.pdf' have been created.")
     return 
 
 # main loop for the program overall 

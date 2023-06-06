@@ -83,6 +83,7 @@ class TOI():
         self.comment = toirow['Public Comment']
         self.tic = toirow['TIC']
 
+# functions used for finding all upcoming TESS transits
 def earth_location(loc):
     '''Takes an inputted location coordinate set from exec
     and returns an actual EarthLocation object
@@ -246,7 +247,8 @@ def decimal_to_fraction(decimal):
     {fraction.numerator % fraction.denominator}/{fraction.denominator}'
     return mixed_fraction
 
-def generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, minalt):
+def generate_all_transits(toi_obj, location, timerange, 
+                          utcoffset, minfrac, minalt):
     '''Function used by the find_all_transits shell in order to generate a
     dataframe of all the transists for a specific toi in the parameters.
     
@@ -319,8 +321,8 @@ def generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, mina
     df['Comments'] = [toi_obj.comment] * transit_count
     
     # sort by altitude of ingress and egress
-    df1 = df[df['Altitude Egress'] > 30]
-    df2 = df[df['Altitude Ingress'] > 30]
+    df1 = df[df['Altitude Egress'] > minalt]
+    df2 = df[df['Altitude Ingress'] > minalt]
     df3 = pd.concat([df1, df2], ignore_index=True).drop_duplicates()
 
     # sort by at least one gress during night
@@ -329,6 +331,54 @@ def generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, mina
     df6 = pd.concat([df4, df5], ignore_index=True).drop_duplicates()
     
     return df6
+
+def save_df_to_pdf(df):
+    '''Saves the large dataframe with all the possible transits to a 
+    nicer looking pdf 
+    
+    Args:
+        df (DataFrame): the df of all the transits (or any df really)
+    
+    Returns:
+        writes pdf "transits.pdf" containing the styled dataframe
+    '''
+    pagesz = landscape((2000, 600))
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=pagesz)
+    doc.topMargin = .1 * inch
+    doc.bottomMargin = .1 * inch
+    
+    # Create a list to hold all the elements in the PDF
+    elements = []
+    
+    # Add title to PDF
+    title_style = getSampleStyleSheet()['Title']
+    title_paragraph = Paragraph('Predicted Transits', title_style)
+    elements.append(title_paragraph)
+    elements.append(Spacer(1, inch * 0.25))
+    
+    # Add pandas dataframe to PDF
+    data = [df.columns[:,].tolist()] + df.values.tolist()
+    table = Table(data)
+    table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                               ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                               ('FONTSIZE', (0,0), (-1,0), 14), ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                               ('BACKGROUND', (0,1), (-1,-1), colors.beige), ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                               ('FONTNAME', (0,1), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,1), (-1,-1), 10),
+                               ('ALIGN', (0,1), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                               ('GRID', (0,0), (-1,-1), 1, colors.black)]))
+    
+    elements.append(table)
+
+    # Build PDF
+    doc.build(elements)
+
+    # Save PDF from buffer
+    pdf = buffer.getvalue()
+    buffer.close()
+    with open("transits.pdf", 'wb') as f:
+        f.write(pdf)
+    return
 
 def find_all_transits(location=SEO, 
                       data = DATA,
@@ -383,5 +433,7 @@ def find_all_transits(location=SEO,
     
     display(mainframe)
     mainframe.to_csv('transits.csv', index=False)
+    save_df_to_pdf(mainframe)
     return mainframe
 
+# functions used for plotting a specific transit
