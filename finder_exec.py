@@ -12,17 +12,17 @@ def help():
 
 def transit_predictor():
     print('-----------------------------------')
-    print('Transit predictor gives possibly observable \
-        transits with the given parameters. Default \
-        settings show a few past transits. Make sure you \
-        know the correct JD date range. Type q at anytime \
-        to quit the program.')
+    print('Transit predictor gives possibly observabletransits with the given' +
+          'parameters. Default settings show a few past transits. Make sure you' +
+          'know the correct JD date range. Type q at anytime to quit the program.')
     print('-----------------------------------')
     while True:
         default = input("Default all parameters? (y/n): ")
         if default == 'y':
             print('Running...')
-            return code.find_all_transits()
+            result = code.find_all_transits()
+            print("File 'transtis.csv' has been created.")
+            return
         elif default == 'n': 
             break 
         elif default == 'q' or default == 'quit':

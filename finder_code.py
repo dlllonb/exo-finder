@@ -95,7 +95,10 @@ def earth_location(loc):
     '''
     return EarthLocation(lat=loc[0]*u.deg, lon=loc[1]*u.deg, height=loc[2]*u.m)
 
-def calculate_transit_times(toi, fraction=1, timerange=(2457000, 2461000), mode='mid'):
+def calculate_transit_times(toi, 
+                            fraction=1, 
+                            timerange=(2457000, 2461000), 
+                            mode='mid'):
     '''A function that calculates all the possible transit times in the 
     BJD scale for the entire range of TESS data for the given fraction for
     a specific TOI planet.
@@ -186,7 +189,9 @@ def calculate_transit_times(toi, fraction=1, timerange=(2457000, 2461000), mode=
     
     return transtimes
 
-def altaz_at_time(toi, time, location):
+def altaz_at_time(toi, 
+                  time, 
+                  location):
     '''Gives the altaz object of the TOI at the given time
     
     Args:
@@ -201,7 +206,9 @@ def altaz_at_time(toi, time, location):
     altaz = coords.transform_to(AltAz(obstime=time, location=location))
     return altaz
 
-def calculate_transit_alts(toi, location, times):
+def calculate_transit_alts(toi, 
+                           location, 
+                           times):
     '''Calculates the altitude and azimuth at ingress and egress for a TOI
     
     Args: 
@@ -214,7 +221,8 @@ def calculate_transit_alts(toi, location, times):
     '''
     altazs = []
     for trans in times: 
-        altazs.append((altaz_at_time(toi, trans[0], location), altaz_at_time(toi, trans[1], location)))
+        altazs.append((altaz_at_time(toi, trans[0], location), 
+                       altaz_at_time(toi, trans[1], location)))
     return altazs
 
 def decimal_to_fraction(decimal):
@@ -234,7 +242,8 @@ def decimal_to_fraction(decimal):
         neg = '-'
     absdec = abs(decimal)
     fraction = Fraction(absdec).limit_denominator(20)
-    mixed_fraction = f'{neg}{fraction.numerator // fraction.denominator} {fraction.numerator % fraction.denominator}/{fraction.denominator}'
+    mixed_fraction = f'{neg}{fraction.numerator // fraction.denominator} \
+    {fraction.numerator % fraction.denominator}/{fraction.denominator}'
     return mixed_fraction
 
 def generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, minalt):
@@ -260,12 +269,14 @@ def generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, mina
     df['TOI ID'] = [toi_obj.name] * transit_count
     df['Time Ingress JD'] = [f'{float(x[0].value):.4f}' for x in transit_times]
     
-    itimes = [Time((x[0] + (utcoffset*u.hour)), format='fits').value for x in transit_times]
+    itimes = [Time((x[0] + (utcoffset*u.hour)), 
+                   format='fits').value for x in transit_times]
     itimes2 = [x.split('T') for x in itimes]
     ingress_times = [" ".join(x) for x in itimes2]
     df['Time Ingress Local'] = ingress_times
     
-    etimes = [Time((x[1] + (utcoffset*u.hour)), format='fits').value for x in transit_times]
+    etimes = [Time((x[1] + (utcoffset*u.hour)), 
+                   format='fits').value for x in transit_times]
     etimes2 = [x.split('T') for x in etimes]
     egress_times = [" ".join(x) for x in etimes2]
     df['Time Egress Local'] = egress_times
@@ -302,7 +313,8 @@ def generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, mina
     df['TMag'] = [toi_obj.tmag] * transit_count
     df['Duration'] = [round(toi_obj.duration, 3)] * transit_count
     midtrans = [x[0].value + ((toi_obj.duration) / 24) for x in transit_times]
-    df['Period Fraction'] = [decimal_to_fraction((x - (toi_obj.transit0 + TESST)) / toi_obj.period) for x in midtrans]
+    df['Period Fraction'] = [decimal_to_fraction((x - (toi_obj.transit0 + TESST)) /\
+                                                  toi_obj.period) for x in midtrans]
     df['Period'] = [toi_obj.period] * transit_count
     df['Comments'] = [toi_obj.comment] * transit_count
     
@@ -352,15 +364,18 @@ def find_all_transits(location=SEO,
     selected.reset_index(drop=True, inplace=True)
     
     # create mainframe that will be returned 
-    mainframe = pd.DataFrame(columns=['TOI ID', 'Time Ingress JD', 'Time Ingress Local', 'Time Egress Local',
-                                    'Azimuth Ingress', 'Altitude Ingress', 'Altitude Egress', 
-                                    'Nighttime Ingress?', 'Nighttime Egress?', 'Depth (ppt)', 'TMag', 'Duration', 
-                                    'Period Fraction', 'Period', 'Comments'])
+    mainframe = pd.DataFrame(columns=['TOI ID', 'Time Ingress JD', 'Time Ingress Local', 
+                                      'Time Egress Local','Azimuth Ingress', 
+                                      'Altitude Ingress', 'Altitude Egress', 
+                                      'Nighttime Ingress?', 'Nighttime Egress?', 
+                                      'Depth (ppt)', 'TMag', 'Duration', 
+                                      'Period Fraction', 'Period', 'Comments'])
     
-    # for each TOI fitting the parameters, find its transits and add them to mainframe
+    # for each TOI fitting the params, find its transits and add them to mainframe
     for row in range(len(selected)):
         toi_obj = TOI(selected.iloc[row]['Full TOI ID'], selected)
-        toidata = generate_all_transits(toi_obj, location, timerange, utcoffset, minfrac, minalt)
+        toidata = generate_all_transits(toi_obj, location, timerange,
+                                         utcoffset, minfrac, minalt)
         mainframe = pd.concat([mainframe, toidata], ignore_index=True)
         
     mainframe.sort_values('Time Ingress JD', inplace=True)
