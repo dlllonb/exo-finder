@@ -256,7 +256,7 @@ def decimal_to_fraction(decimal):
     fraction = Fraction(absdec).limit_denominator(20)
     mixed_fraction = f'{neg}{fraction.numerator // fraction.denominator} \
     {fraction.numerator % fraction.denominator}/{fraction.denominator}'
-    if (mixed_fraction[-1]=='1'):
+    if (mixed_fraction[-1]=='1') and (mixed_fraction[-2]=='/'):
         return mixed_fraction[:-4]
     return mixed_fraction
 
@@ -504,3 +504,189 @@ def toi_plot_transit(toi, ingress_time, utcoffset=-7, location=SEO):
     plt.show()
     return 
 
+# functions for retrieiving and displaying light curves
+
+def save_figures_to_pdf(figures, toi):
+    '''Takes a list of figures and saves them to a pdf on top of the other
+    
+    Args:
+        figures (list(Figure)): list of figures
+        toi (str): toi name for titling purposes
+    
+    Returns:
+        creates an output pdf with the figure pngs in it
+    '''
+    # Create buffer to hold PDF
+    buffer = io.BytesIO()
+
+    # Create PDF canvas using buffer
+    doc = SimpleDocTemplate(buffer, pagesize=PAGE_SIZE)
+    
+    doc.topMargin = .1 * inch
+    doc.bottomMargin = .1 * inch
+    
+    # Create a list to hold all the elements in the PDF
+    elements = []
+
+    # Add title to PDF
+    title_style = getSampleStyleSheet()['Title']
+    title_paragraph = Paragraph(f'TESS Lightcurves for TOI {toi}', title_style)
+    elements.append(title_paragraph)
+    elements.append(Spacer(1, inch * 0.25))
+    
+    # Add figures to PDF
+    for i, fig in enumerate(figures):
+        # Save figure to buffer as PNG
+        img_buffer = io.BytesIO()
+        fig.savefig(img_buffer, format='png')
+        plt.close(fig)
+
+        # Add PNG to PDF
+        img = Image(img_buffer)
+        img.drawHeight = 100
+        img.drawWidth = 500
+        elements.append(img)
+        elements.append(Spacer(1, inch * 0.25))
+        
+    # Build PDF
+    doc.build(elements)
+
+    # Save PDF from buffer
+    pdf = buffer.getvalue()
+    buffer.close()
+    with open("lightcurves.pdf", 'wb') as f:
+        f.write(pdf)
+    return
+
+def toi_extract_all_curves(toi, fraction=1):
+    '''Find all the light curves in the TESS database for the given TOI
+    that correspond to a transit time, or possible transit time based on
+    the fraction given. Download the products and arrange into a dict 
+    that contains the necessary info for plotting.
+    
+    Args:
+        toi (TOI, float): a TOI object or a float TOI ID
+        fraction (int): largest fraction to divide period into
+    
+    Returns:
+        tess_data_dict (dict): dictionary containing 
+    '''
+    if isinstance(toi, float):
+        toi = TOI(toi)
+    
+    # initialize variables
+    sectors = [int(x) for x in toi.sectors[1:-1].split(',')]
+    TIC = toi.tic
+    epoch = toi.transit0
+    period = toi.period
+    duration = toi.duration / 24
+    depth = toi.depth / 10000
+    
+    # find available light curve data
+    dataprods = lk.search_lightcurve(f'TIC {TIC}')
+    
+    # find all transit times
+    all_transits = calculate_transit_times(toi, fraction, timerange=(TESST, TESST + 4000), mode='mid')
+    
+    # extract applicable products into dictionary with entry for each transit time
+    tess_data_dict = {}
+    for i, prod in enumerate(dataprods):
+        try:
+            product = prod.download()
+        except:
+            continue
+        times = product['time'].value
+        start = times[0]
+        end = times[-1]
+        fluxes = product['flux'].value
+        author = prod.author.data[0]
+        sector = prod.mission[0]
+        info2 = {'author': author, 'sector': sector, 'duration':duration, 
+                 'depth':depth, 'epoch':epoch, 'period':period}
+        for trans in all_transits:
+            if start < trans < end:
+                iden = (trans)
+                ingr = trans - (duration * .5) - .5
+                egr = trans + (duration * .5) + .5
+                
+                ingr_ind = 0
+                for time in times:
+                    if time > ingr:
+                        break
+                    else:
+                        ingr_ind += 1   
+                egr_ind = 0
+                for time in times:
+                    if time > egr:
+                        break
+                    else:
+                        egr_ind += 1
+                
+                time_range = times[ingr_ind:egr_ind]
+                flux_range = fluxes[ingr_ind:egr_ind]
+                if iden not in tess_data_dict:
+                    tess_data_dict[iden] = []
+                tess_data_dict[iden].append((time_range, flux_range, info2))
+    return tess_data_dict
+
+def toi_plot_curves(toi, fraction=1):
+    '''Plots all the light curves for a given TOI at the given fraction
+    by downloading them with toi_extract_all_curves. Also saves each fig
+    to a pdf containing all transits for this TOI.
+    
+    Args:
+        toi (TOI, float): a TOI object or a float TOI ID
+        fraction (int): largest fraction to divide period into
+    
+    Returns:
+        creates an output pdf with each figure using auxiliary function
+    '''
+    if isinstance(toi, float):
+        toi = TOI(toi)
+    epoch = toi.transit0
+    period = toi.period
+    duration = toi.duration / 24
+    depth = toi.depth / 10000
+    
+    tess_data_dict = toi_extract_all_curves(toi, fraction)
+    figures = []
+    for key in tess_data_dict:
+        
+        datasets = tess_data_dict[key]
+        curve_count = len(datasets)
+        
+        fig = plt.figure(figsize=(10, 2))
+        rows = 1
+        columns = curve_count
+        
+        for i, plot in enumerate(datasets):
+            ax = fig.add_subplot(rows, columns, i + 1)
+            y = np.array(plot[1]) / np.median(plot[1])
+            #plt.plot(plot[0], plot[1], "Black", linewidth=.75, alpha=.85)
+            plt.plot(plot[0], y, "Black", linewidth=.75, alpha=.85)
+            plt.title(plot[2]['author'], size=12)
+            #ax.set_yticklabels([])
+            plt.tight_layout()
+            plt.yticks(fontsize=8)
+            plt.xticks(fontsize=8)
+            plt.axvline(x=float(key), ls='--', color='red', alpha=0.5)
+            ax.axvspan((float(key) - (duration / 2)), (float(key) + (duration / 2)), 
+                       alpha=0.25, color='grey')
+            if i == 0:
+                plt.ylabel('Flux', size=12)
+       
+        # generate title and show plots
+        sector_id = datasets[0][2]['sector']
+        n1 = ((key - epoch) / period)
+        n = decimal_to_fraction(n1)
+        title = f'{sector_id} (E = {n})'
+        fig.suptitle(title, size=10, y=1, fontweight='bold')
+        plt.text(.5, -.1, 'Time (BJD-2457000)', transform=fig.transFigure, 
+                 horizontalalignment='center')
+        figures.append(fig)
+        plt.close('all')
+        #plt.show()
+        #print('')
+        
+    save_figures_to_pdf(figures, toi.name)
+    return

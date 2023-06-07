@@ -9,6 +9,7 @@ def help():
     print("  quit : quits the program")
     print("  predictor: starts the transit predictor")
     print("  plotter: starts the transit plotter")
+    print("  curves: starts curve finder for a TOI")
     print("")
 
 def transit_predictor():
@@ -180,11 +181,14 @@ def transit_predictor():
         else:
             continue
     
-    result = code.find_all_transits(location=elocation, timerange=timerange, 
-                                    utcoffset=utcoffset, minfrac=minfrac, 
-                                    periods=periods, mindepth=mindepth, 
-                                    minalt=minalt)
-    print("File 'transtis.csv' and 'transits.pdf' have been created.")
+    try:
+        result = code.find_all_transits(location=elocation, timerange=timerange, 
+                                        utcoffset=utcoffset, minfrac=minfrac, 
+                                        periods=periods, mindepth=mindepth, 
+                                        minalt=minalt)
+        print("File 'transtis.csv' and 'transits.pdf' have been created.")
+    except:
+        print("Program failed with given parameters.")
     return 
 
 def transit_plotter():
@@ -277,6 +281,41 @@ def transit_plotter():
     print('Output png generated.')
     return
 
+def transit_curves():
+    print('-----------------------------------')
+    print('Produces a output pdf with light curves from the TESS database' +
+          'for the given TOI, down to the given fractional period minimum.')
+    print('-----------------------------------')
+
+    tid = -1
+    while tid == -1:
+        tid1 = input("TOI ID: ")
+        if tid1 == 'q' or tid1 == 'quit':
+            return
+        try: 
+            tid2 = float(tid1)
+            tid = tid2
+        except:
+            continue
+    
+    frac = -1
+    while frac == -1:
+        frac1 = input("Smallest fraction of given period to search: ")
+        if frac1 == 'q' or frac1 == 'quit':
+            return
+        try: 
+            frac2 = int(frac1)
+            frac = frac2
+        except:
+            continue
+    
+    try:
+        code.toi_plot_curves(tid, frac)
+        print("Output file generated.")
+    except:
+        print("Program failed with given parameters.")
+    return
+     
 # main loop for the program overall 
 while True:
     command = input("c: ")
@@ -288,6 +327,8 @@ while True:
         transit_predictor()
     elif command == "plotter":
         transit_plotter()
+    elif command == "curves":
+        transit_curves()
     else:
         print("Unknown command... type help to see list.")
     
