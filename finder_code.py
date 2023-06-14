@@ -260,7 +260,9 @@ def decimal_to_fraction(decimal):
         return mixed_fraction[:-4]
     return mixed_fraction
 
-def generate_all_transits(toi_obj, location, timerange, 
+def generate_all_transits(toi_obj, 
+                          location, 
+                          timerange, 
                           utcoffset, minfrac, minalt):
     '''Function used by the find_all_transits shell in order to generate a
     dataframe of all the transists for a specific toi in the parameters.
@@ -450,7 +452,10 @@ def find_all_transits(location=SEO,
     return mainframe
 
 # function used for plotting a specific transit
-def toi_plot_transit(toi, ingress_time, utcoffset=-7, location=SEO):
+def toi_plot_transit(toi, 
+                     ingress_time, 
+                     utcoffset=-7, 
+                     location=SEO):
     '''Makes a pretty plot of the target location and the sun and moon
     locations over the course of a given tranist.
     
@@ -505,8 +510,8 @@ def toi_plot_transit(toi, ingress_time, utcoffset=-7, location=SEO):
     return 
 
 # functions for retrieiving and displaying light curves
-
-def save_figures_to_pdf(figures, toi):
+def save_figures_to_pdf(figures, 
+                        toi):
     '''Takes a list of figures and saves them to a pdf on top of the other
     
     Args:
@@ -558,7 +563,8 @@ def save_figures_to_pdf(figures, toi):
         f.write(pdf)
     return
 
-def toi_extract_all_curves(toi, fraction=1):
+def toi_extract_all_curves(toi, 
+                           fraction=1):
     '''Find all the light curves in the TESS database for the given TOI
     that correspond to a transit time, or possible transit time based on
     the fraction given. Download the products and arrange into a dict 
@@ -629,7 +635,8 @@ def toi_extract_all_curves(toi, fraction=1):
                 tess_data_dict[iden].append((time_range, flux_range, info2))
     return tess_data_dict
 
-def toi_plot_curves(toi, fraction=1):
+def toi_plot_curves(toi, 
+                    fraction=1):
     '''Plots all the light curves for a given TOI at the given fraction
     by downloading them with toi_extract_all_curves. Also saves each fig
     to a pdf containing all transits for this TOI.
@@ -689,4 +696,572 @@ def toi_plot_curves(toi, fraction=1):
         #print('')
         
     save_figures_to_pdf(figures, toi.name)
+    return
+
+# functions for analyzing a TOI and all its curves
+def least_square(fluxes_r, model_fluxes):
+    '''Calculate the chi squared value between the points and the model points
+    
+    Args:
+        fluxes_r (array): array of data fluxes
+        model_fluxes (array): array of model fluxes
+        
+    Returns
+        float: chi squared test statistic
+    '''
+    fluxes_r = np.nan_to_num(fluxes_r, nan=1)
+    return float(sum((fluxes_r - model_fluxes)**2))
+
+def test_least_square(midtransit, args): 
+    '''Helper function to calculate the model flux points
+    
+    Args:
+        midtransit (float): middle of transit time
+        args (list): list of transit data time, flux, duration, depth
+        
+    Returns:
+        calls least square function, returns float chi square statistic
+    '''
+    # args = [times, fluxes, duration, depth]
+    
+    # extract transit data constants
+    times, fluxes, duration, depth = args[0], args[1], args[2], args[3]
+    
+    # calculate ingress and egress times for the given midtransit point
+    ing, egr = (midtransit - (duration / 2)), (midtransit + (duration / 2))
+    
+    # initialize an array of model fluxes the same size as actual fluxes
+    model_fluxes = np.zeros_like(fluxes)
+    
+    # loop through times and create model 
+    for i, t in enumerate(times):
+        
+        # if time is during transit, value is (1 - depth), 1 otherwise
+        if t < ing:
+            model_fluxes[i] = 1
+        elif egr > t > ing:
+            drop = 1 - (depth / 100) 
+            model_fluxes[i] = drop
+        elif t > egr:
+            model_fluxes[i] = 1
+    
+    # check the whole model got filled in 
+    assert np.min(model_fluxes) > 0 
+    
+    return least_square(fluxes, model_fluxes)
+
+def transit_time_fit(times, fluxes, duration, depth, n=1000):
+    '''Uses statistic tests to find the best fit transit midtime 
+    
+    Args:
+        times (array): time data
+        fluxes (array): flux data
+        duration (float): time length of the transit
+        depth (float): depth of the transit
+        n (int): maximum precision of fit
+    
+    Returns:
+        minimum_time (float): the calculated transit midpoint
+    '''
+    # create constant args [times, norm_flux, duration, depth]
+    norm_flux = fluxes / np.median(fluxes)
+    args = [times, norm_flux, duration, depth]
+    
+    # find start and end of data range
+    if len(times) == 0:
+        return np.nan
+    start, end = times[0], times[-1]
+
+    # range of possible mid transit times in the data range
+    possible_transits = np.linspace(start, end, n)
+    
+    chi2s = []
+    
+    # initialize minimum values
+    minimum_time = 0 
+    minimum_chi2 = math.inf
+    
+    # try each possible choice
+    for mid in possible_transits:
+        
+        # calculate the chi2 statistic for given midtransit time
+        chi2 = test_least_square(mid, args)
+        
+        # if this value fits better than previous best, update the best fit
+        if chi2 < minimum_chi2:
+            minimum_time = mid
+            minimum_chi2 = chi2
+        
+        #chi2s.append(chi2)
+    
+    return minimum_time#, chi2s
+
+def transit_depth_fit(times, fluxes, midtransit, duration, depth, n=1000, sideperc=.3):
+    '''Calculate the transit depth with the best fit curve
+    
+    Args:
+        times (array): time data
+        fluxes (array): flux data
+        midtransit (float): calculated mid transit time
+        duration (float): transit duration
+        depth (float): given transit depth
+        n (int): fineness of fit, not used... 
+        
+    Return:
+        float calculated depth value
+        sigmas: i forget what this is atm...
+    '''
+    # create and select in transit array from data
+    #norm_flux = fluxes / np.median(fluxes)
+    
+    ing, egr = (midtransit - (duration / 2)), (midtransit + (duration / 2))
+    baseline = []
+    for i, time in enumerate(times):
+        if (time < ing) or (time > egr):
+            baseline.append(fluxes[i])
+    median = np.median(np.array(baseline))
+    norm_flux = fluxes / median
+    
+    intransit_full = []
+    for i, time in enumerate(times):
+        if ing < time < egr:
+            intransit_full.append(norm_flux[i])
+    
+    # estimate # of points in egress and ingress to cut off, for now, just cut max 20% per side
+    intr_count = len(intransit_full)
+    perc_10 = int(intr_count * sideperc)
+    intransit = intransit_full[perc_10:intr_count - perc_10]
+    
+    # determine if depth is significant 
+    norm_base = baseline / np.median(baseline)
+    base_mean = np.mean(norm_base)
+    base_std = np.std(norm_base)
+    diff = base_mean - np.mean(intransit)
+    sigmas = diff / base_std
+              #((1 - minimum_depth) * 100)
+    return (1 - np.median(intransit)) * 100, sigmas
+
+def plot_fit(times, fluxes, midtransit, depth, duration):
+    '''
+    '''
+    #norm_fluxes = fluxes / np.median(fluxes)
+    
+    # calculate ingress and egress times for the given midtransit point
+    ing, egr = (midtransit - (duration / 2)), (midtransit + (duration / 2))
+    
+    
+    baseline = []
+    for i, time in enumerate(times):
+        if (time < ing) or (time > egr):
+            baseline.append(fluxes[i])
+    median = np.median(np.array(baseline))
+    norm_flux = fluxes / median
+    
+    
+    # initialize an array of model fluxes the same size as actual fluxes
+    model_fluxes = np.zeros_like(fluxes)
+    
+    # loop through times and create model 
+    for i, t in enumerate(times):
+        
+        # if time is during transit, value is (1 - depth), 1 otherwise
+        if t < ing:
+            model_fluxes[i] = 1
+        elif egr > t > ing:
+            drop = 1 - (depth / 100) 
+            model_fluxes[i] = drop
+        elif t > egr:
+            model_fluxes[i] = 1
+    
+    
+    # graph data times and fluxes
+    plt.scatter(times, norm_flux, s=6)
+    plt.plot(times, model_fluxes, c='r', lw=10, alpha=.5)
+    plt.xlabel("TESS Time BJD-2457000")
+    plt.ylabel("Median Normalized Flux")
+    plt.title("Transit Fit")
+    return
+
+def transit_analysis(times, fluxes, duration, depth, show=False):
+    '''Function that does initial analysis of a single light curve and 
+    tries to determine if it contains a transit by fitting the depth and
+    the time, and doing a few extra checks. 
+    
+    Args:
+        times (array): time data
+        fluxes (array): flux data
+        duration (float): transit duration
+        depth (float): given transit depth
+        show (bool): obsolete now I believe
+        
+    Returns:
+        information on the transit fit
+    '''
+    # replace any nans in the data
+    fluxes_1 = fluxes
+    median_val = np.nanmedian(fluxes)
+    fluxes_1[np.isnan(fluxes)] = median_val
+    broken = False
+    
+    ttime = transit_time_fit(times, fluxes_1, duration, depth)
+    tdepth, sigma = transit_depth_fit(times, fluxes_1, ttime, duration, depth)
+    
+    transit = True
+    # ADD MORE CONSTRAINTS HERE
+
+    if math.isnan(ttime) or math.isnan(tdepth):
+        if show:
+            print("Not likely to be a transit!")
+        transit = False
+    
+    if tdepth < .05:
+        if show:
+            print("Not likely to be a transit!")
+        transit = False
+        
+    if abs(depth - tdepth) > .2:
+        if show:
+            print("Not likely to be a transit!")
+        transit = False
+    
+    if len(times) > 0:
+        if (abs(times[0] - ttime) < .1) or (abs(times[-1] - ttime) < .1):
+            if show:
+                print("Not likely to be a transit!")
+            transit = False
+    
+    if show:
+        print(f"Best fit transit with {sigma:.3f} sigma identified at {round(ttime, 3)} days with depth of {round(tdepth, 3)}%")
+        plot_fit(times, fluxes, ttime, tdepth, duration)
+
+    return ttime, tdepth, sigma, transit
+
+def plot_toi_fits(datalist): 
+    '''Given the list of light curves and info for a TOI, does the analysis
+    of each transit and prepares a datastructure to be reduced to a pdf.
+    
+    Args:
+        datalist (dict): dictionary contianing all the information to be processed
+    
+    Returns:
+        figure_list (list(Fig)): list of generated figures for each light curve
+        df (DataFrame): dataframe containing information on each transit
+    '''
+    sectors = ['----']
+    fractions = ['----']
+    depths = []
+    sigmas = ['----']
+    transited = ['----']
+    ttv = ['----']
+    
+    figure_list = []
+    
+    for transtime in datalist.keys():
+        dataset = datalist[transtime]
+        if len(depths) == 0:
+            depths.append(dataset[0][2]['depth'])
+        
+        fig = plt.figure(figsize=(10, 2))
+        rows = 1
+        columns = len(dataset)
+        
+        period = 0
+        epoch = 0
+        ttimed = []
+        tdepths = []
+        tsigmas = []
+        transits = []
+        ttvs = []
+        
+        
+        expected_mid = transtime
+        single = len(dataset)
+        for i, trans in enumerate(dataset):
+            epoch = trans[2]['epoch']
+            period = trans[2]['period']
+
+            ax = fig.add_subplot(rows, columns, i + 1)
+            ttime, tdepth, sigma, transit = transit_analysis(trans[0], trans[1], trans[2]['duration'], trans[2]['depth'], False)
+            
+            ttimed.append(ttime)
+            tsigmas.append(sigma)
+            tdepths.append(tdepth)
+            ttvs.append(ttime - expected_mid)
+            if transit:
+                transits.append(1)
+            else:
+                transits.append(0)
+            
+            
+            ing, egr = (ttime - (trans[2]['duration'] / 2)), (ttime + (trans[2]['duration'] / 2))
+    
+            baseline = []
+            for j, time in enumerate(trans[0]):
+                if (time < ing) or (time > egr):
+                    baseline.append(trans[1][j])
+            median = np.median(np.array(baseline))
+            norm_flux = trans[1] / median
+
+
+            # initialize an array of model fluxes the same size as actual fluxes
+            model_fluxes = np.zeros_like(trans[1])
+
+            # loop through times and create model 
+            for k, t in enumerate(trans[0]):
+
+                # if time is during transit, value is (1 - depth), 1 otherwise
+                if t < ing:
+                    model_fluxes[k] = 1
+                elif egr > t > ing:
+                    drop = 1 - (tdepth / 100) 
+                    model_fluxes[k] = drop
+                elif t > egr:
+                    model_fluxes[k] = 1
+
+
+            # graph data times and fluxes
+            plt.scatter(trans[0], norm_flux, s=6)
+            if transit:
+                lc = 'g'
+            else:
+                lc = 'r'
+            plt.plot(trans[0], model_fluxes, c=lc, lw=5, alpha=.5)
+            plt.ylim(((1 - (depths[0] / 100) * 2.5), (1 +((depths[0] / 100) * 1.5))))
+            plt.axvline(x=float(expected_mid), ls='--', color='red', alpha=0.5)
+            if i != 0:
+                ax.set_yticklabels([])
+            plt.tight_layout()
+            plt.yticks(fontsize=8)
+            plt.xticks(fontsize=8)
+            if i == 0:
+                plt.ylabel('Flux', size=12)
+            if columns >= 6:
+                fsize = 5
+            elif columns >= 4:
+                fsize = 6
+            else:
+                fsize = 8
+            if single != 1:
+                plt.title(f"{trans[2]['author']} - T: {ttime:.3f}, D: {tdepth:.3f}%, \u03C3: {sigma:.3f}", fontsize=fsize)
+        
+        # ADD CODE HERE TO THROW OUT BAD FITS from lists
+        # remove from: ttimed, tsigmas, ttvs, tdepths
+        def sigma_calc(*args):
+            csigmas = []
+            for lst in args:
+                csigmas.append(np.std(lst))
+            return csigmas
+        
+        # protect against one bad data analysis missing a transit
+        if (len(transits) - sum(transits)) == 1:
+            idx = np.argmin(transits)
+            ttimed.remove(ttimed[idx])
+            tsigmas.remove(tsigmas[idx])
+            ttvs.remove(ttvs[idx])
+            tdepths.remove(tdepths[idx])
+        
+        # protect against a false positive transit skewing good transit results
+        if len(ttvs) > 1:
+            if ((max(ttvs) > .3) and (min(ttvs) < .3)) or (np.std(ttvs) > .1):
+                idx = np.argmax(np.abs(ttvs))
+                ttimed.remove(ttimed[idx])
+                tsigmas.remove(tsigmas[idx])
+                ttvs.remove(ttvs[idx])
+                tdepths.remove(tdepths[idx])
+                transits[idx] = False
+        
+        # protect against a nan result somehow evaluating as True
+        for idx, dep in enumerate(tdepths): 
+            if math.isnan(dep):
+                idx = np.argmax(np.abs(ttvs))
+                ttimed.remove(ttimed[idx])
+                tsigmas.remove(tsigmas[idx])
+                ttvs.remove(ttvs[idx])
+                tdepths.remove(tdepths[idx])
+                transits[idx] = False
+                
+
+
+        ntswitch = False
+        positive = sum(transits) / len(transits)
+        if positive >= .75:
+            yn = ' : Likely Transit : '           
+        elif positive >= .5:
+            yn = ' : Possible Transit : '
+        elif positive >= .25:
+            yn = ' : Unlikely Transit : '           
+        else:
+            yn = ' : No Transit : '
+            ntswitch = True
+        
+        tstr = str(len(transits)) + yn + str(round(positive, 2))
+        transited.append(tstr)
+        # for adding the fraction to the graph title
+        n1time = expected_mid
+        n1 = ((n1time - epoch) / period)
+        if abs(n1) > .999:
+            y = str(abs(n1)).split('.')
+            whole = float(y[0])
+            dec = round(float('.' + y[1]), 3)
+            n = whole + dec
+            if n1 < 0:
+                n = n * -1   
+        elif abs(n1) < .00001:
+            n = 0.0
+        else:
+            n = round(float(n1), 3)
+        
+        sectors.append(dataset[0][2]['sector'])
+        fractions.append(n)
+        
+        if not ntswitch:
+            if len(tdepths) > 0:
+                mean_depth = np.mean(tdepths)
+            else:
+                mean_depth = 0
+            depths.append(mean_depth)
+
+            if len(tsigmas) > 0:
+                mean_sigma = np.mean(tsigmas)
+            else:
+                mean_sigma = 0
+            sigmas.append(mean_sigma)
+
+            if len(ttvs) > 0:
+                mean_ttv = np.mean(ttvs)
+            else:
+                mean_ttv = 0                 
+            ttv.append(mean_ttv)
+        else:
+            depths.append(0)
+            sigmas.append('----')
+            ttv.append('----')
+        
+        title = str(dataset[0][2]['sector']) + yn + f'(E = {n})'
+        if single != 1:
+            fig.suptitle(title, size=10, y=1, fontweight='bold')
+        if single == 1:
+            title2 = (f"  {trans[2]['author']} - T: {ttime:.3f}, D: {tdepth:.3f}%, \u03C3: {sigma:.3f}")
+            fig.suptitle(title + title2, size=10, y=1, fontweight='bold')
+            
+        plt.text(.5, .01, 'Time (BJD-2457000)', transform=fig.transFigure, horizontalalignment='center')
+        plt.show()
+        print('')
+        
+        if (yn == ' : Likely Transit : ') or (yn == ' : Possible Transit : ') or (abs(n - int(n)) < .03):
+            figure_list.append(fig)
+
+    display_data = {"TESS Sector": sectors, 
+    "Epoch": fractions,
+    "# : Transit? : %": transited,
+    "Depth (%)": list(np.array(depths) * 1),
+    "Sigma (\u03C3)": sigmas,
+    "TTV (Days)": ttv}
+
+    df = pd.DataFrame(display_data)
+    TOI_ID = "Data Summary"
+    #display(Markdown(f"<h2 style='text-align:center';>{TOI_ID}</h2>"))
+    #display(df)
+    #print('')
+    
+    return figure_list, df
+
+def create_pdf(figures, df, title, subtitle):
+    '''Creates the pdf output for main TOI analysis given a list of 
+    light curve graphs, a dataframe with information about them, and
+    two title strings.
+    
+    Args:
+        figures (list(Fig)): list of graphs to be shown
+        df (DataFrame): dataframe to be shown
+        title (str): main title
+        subtitle (str): subtitle
+    
+    Returns: 
+        pdf (Buffer): contains the pdf
+    '''
+    # Create buffer to hold PDF
+    buffer = io.BytesIO()
+
+    # Create PDF canvas using buffer
+    pgsize = landscape(letter)
+    doc = SimpleDocTemplate(buffer, pagesize=pgsize)
+    
+    doc.topMargin = .1 * inch
+    doc.bottomMargin = .1 * inch
+    
+    # Create a list to hold all the elements in the PDF
+    elements = []
+
+    # Add title to PDF
+    title_style = getSampleStyleSheet()['Title']
+    title_paragraph = Paragraph(title, title_style)
+    elements.append(title_paragraph)
+    
+    stitle = ParagraphStyle(name='stitle', fontSize=10, leading=12, alignment=1, spaceAfter=12,)
+    elements.append(Paragraph(subtitle, stitle))
+    
+    elements.append(Spacer(1, inch * 0.25))
+    
+    
+    # Add figures to PDF
+    for i, fig in enumerate(figures):
+        # Save figure to buffer as PNG
+        img_buffer = io.BytesIO()
+        fig.savefig(img_buffer, format='png')
+        plt.close(fig)
+
+        # Add PNG to PDF
+        img = Image(img_buffer)
+        img.drawHeight = 100
+        img.drawWidth = 500
+        elements.append(img)
+        elements.append(Spacer(1, inch * 0.25))
+        
+        
+
+    # Add pandas dataframe to PDF
+    data = [df.columns[:,].tolist()] + df.values.tolist()
+    table = Table(data)
+    table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                               ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                               ('FONTSIZE', (0,0), (-1,0), 14), ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                               ('BACKGROUND', (0,1), (-1,-1), colors.beige), ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                               ('FONTNAME', (0,1), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,1), (-1,-1), 10),
+                               ('ALIGN', (0,1), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                               ('GRID', (0,0), (-1,-1), 1, colors.black)]))
+    elements.append(table)
+
+    # Build PDF
+    doc.build(elements)
+
+    # Save PDF from buffer
+    pdf = buffer.getvalue()
+    buffer.close()
+    return pdf
+
+def toi_analysis(toi, fract):
+    '''Main shell function that starts the analysis functions and writes
+    the results to a pdf. This is what is called from the execution file.
+    
+    Args:
+        toi (float): TOI ID
+        fract (int): smallest fraction to divide period into
+    
+    Returns:
+        creates a pdf containing the analyzed information for the TOI
+    '''
+    #display(Markdown(f"<h2 style='text-align:center';>TOI {toi} at Fraction {fract}</h2>"))
+    x = toi_extract_all_curves(toi, fract)
+    period = round(x[list(x.keys())[0]][0][2]['period'], 3)
+    exptrans = [round(t, 3) for t in list(x.keys())]
+    #display(Markdown(f"<p style='text-align:center';>Given period of {period} days, with transits at: {exptrans} BJD-2457000</p>"))
+    
+    subtitle = str(f"Given period of {period} days, with transits at: {exptrans} BJD-2457000")
+    title = str(f"TOI {toi} at Fraction {fract}")  
+    figures, df = plot_toi_fits(x)
+    
+    pdf = create_pdf(figures, df, title, subtitle)
+    with open(f"{toi}.pdf", 'wb') as f:
+        f.write(pdf)
     return
