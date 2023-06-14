@@ -1124,17 +1124,7 @@ def plot_toi_fits(datalist):
         # for adding the fraction to the graph title
         n1time = expected_mid
         n1 = ((n1time - epoch) / period)
-        if abs(n1) > .999:
-            y = str(abs(n1)).split('.')
-            whole = float(y[0])
-            dec = round(float('.' + y[1]), 3)
-            n = whole + dec
-            if n1 < 0:
-                n = n * -1   
-        elif abs(n1) < .00001:
-            n = 0.0
-        else:
-            n = round(float(n1), 3)
+        n = decimal_to_fraction(n1)
         
         sectors.append(dataset[0][2]['sector'])
         fractions.append(n)
@@ -1176,7 +1166,7 @@ def plot_toi_fits(datalist):
         
         if ((yn == ' : Likely Transit : ') or 
             (yn == ' : Possible Transit : ') or 
-            (abs(n - int(n)) < .03)):
+            ('/' not in n)):
             figure_list.append(fig)
 
     display_data = {"TESS Sector": sectors, 
@@ -1191,7 +1181,8 @@ def plot_toi_fits(datalist):
     #display(Markdown(f"<h2 style='text-align:center';>{TOI_ID}</h2>"))
     #display(df)
     #print('')
-    
+    plt.close('all')
+
     return figure_list, df
 
 def create_pdf(figures, 

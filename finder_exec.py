@@ -3,10 +3,11 @@
 import finder_code as code
 
 # intro
-print("Welcome to the TESS exoplanet tool kit. Capabilities include predicting and" +
+print('')
+print("Welcome to the TESS exoplanet tool kit. Capabilities include predicting and " +
        "plotting specific exoplanet transits for observation from the ground as " +
        "well as retrieving plotting and analyzing the archival TESS data for a " +
-       "specific TOI. Additionally, all calculation have the option to include " +
+       "specific TOI. Additionally, all calculations have the option to include " +
        "fractional pieces of the given orbital periods to aid in possible " +
        "observation of missed transits, and reanalysis of past data in order to " +
        "refine predictions for possible real periods especially with respect to " +
@@ -23,6 +24,10 @@ def help():
     print("  analyze: starts TOI curve analysis")
     print("")
 
+# show commands initially
+help()
+
+# functions called from code file
 def transit_predictor():
     print('-----------------------------------')
     print('Transit predictor gives possibly observabletransits with the given' +
@@ -331,7 +336,8 @@ def transit_analysis():
     print('-----------------------------------')
     print('Produces analysis pdf of a given TOI looking specifically at the '+
           'fractional periods down to specified fractional limit. Warning, ' +
-          'this process can take some time')
+          'this process can take some time to run, and generate a lot of warnings ' +
+          'depending on given parameters.')
     print('-----------------------------------')
 
     tid = -1
@@ -356,12 +362,12 @@ def transit_analysis():
         except:
             continue
     
-    try:
-        code.toi_analysis(tid, frac)
-        print("Analyzing...")
-        print(f"Output file {tid}.pdf generated.")
-    except:
-        print("Program failed with given parameters.")
+    #try:
+    print("Analyzing...")
+    code.toi_analysis(tid, frac)
+    print(f"Output file {tid}.pdf generated.")
+    #except:
+        #print("Program failed with given parameters.")
     return
 
 # main loop for the program overall 
