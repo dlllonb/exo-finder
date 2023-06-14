@@ -2,6 +2,16 @@
 
 import finder_code as code
 
+# intro
+print("Welcome to the TESS exoplanet tool kit. Capabilities include predicting and" +
+       "plotting specific exoplanet transits for observation from the ground as " +
+       "well as retrieving plotting and analyzing the archival TESS data for a " +
+       "specific TOI. Additionally, all calculation have the option to include " +
+       "fractional pieces of the given orbital periods to aid in possible " +
+       "observation of missed transits, and reanalysis of past data in order to " +
+       "refine predictions for possible real periods especially with respect to " +
+       "long period planets. (V2.1 Dillon Bass, 6/14/23)")
+
 def help():
     print("")
     print("Here is the list of commands:")
@@ -320,7 +330,8 @@ def transit_curves():
 def transit_analysis():
     print('-----------------------------------')
     print('Produces analysis pdf of a given TOI looking specifically at the '+
-          'fractional periods down to specified fractional limit.')
+          'fractional periods down to specified fractional limit. Warning, ' +
+          'this process can take some time')
     print('-----------------------------------')
 
     tid = -1
@@ -347,6 +358,7 @@ def transit_analysis():
     
     try:
         code.toi_analysis(tid, frac)
+        print("Analyzing...")
         print(f"Output file {tid}.pdf generated.")
     except:
         print("Program failed with given parameters.")

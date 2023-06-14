@@ -699,7 +699,8 @@ def toi_plot_curves(toi,
     return
 
 # functions for analyzing a TOI and all its curves
-def least_square(fluxes_r, model_fluxes):
+def least_square(fluxes_r, 
+                 model_fluxes):
     '''Calculate the chi squared value between the points and the model points
     
     Args:
@@ -712,7 +713,8 @@ def least_square(fluxes_r, model_fluxes):
     fluxes_r = np.nan_to_num(fluxes_r, nan=1)
     return float(sum((fluxes_r - model_fluxes)**2))
 
-def test_least_square(midtransit, args): 
+def test_least_square(midtransit, 
+                      args): 
     '''Helper function to calculate the model flux points
     
     Args:
@@ -750,7 +752,11 @@ def test_least_square(midtransit, args):
     
     return least_square(fluxes, model_fluxes)
 
-def transit_time_fit(times, fluxes, duration, depth, n=1000):
+def transit_time_fit(times, 
+                     fluxes, 
+                     duration, 
+                     depth, 
+                     n=1000):
     '''Uses statistic tests to find the best fit transit midtime 
     
     Args:
@@ -796,7 +802,13 @@ def transit_time_fit(times, fluxes, duration, depth, n=1000):
     
     return minimum_time#, chi2s
 
-def transit_depth_fit(times, fluxes, midtransit, duration, depth, n=1000, sideperc=.3):
+def transit_depth_fit(times, 
+                      fluxes, 
+                      midtransit, 
+                      duration, 
+                      depth, 
+                      n=1000, 
+                      sideperc=.3):
     '''Calculate the transit depth with the best fit curve
     
     Args:
@@ -841,7 +853,11 @@ def transit_depth_fit(times, fluxes, midtransit, duration, depth, n=1000, sidepe
               #((1 - minimum_depth) * 100)
     return (1 - np.median(intransit)) * 100, sigmas
 
-def plot_fit(times, fluxes, midtransit, depth, duration):
+def plot_fit(times, 
+             fluxes, 
+             midtransit, 
+             depth, 
+             duration):
     '''
     '''
     #norm_fluxes = fluxes / np.median(fluxes)
@@ -882,7 +898,11 @@ def plot_fit(times, fluxes, midtransit, depth, duration):
     plt.title("Transit Fit")
     return
 
-def transit_analysis(times, fluxes, duration, depth, show=False):
+def transit_analysis(times, 
+                     fluxes, 
+                     duration, 
+                     depth, 
+                     show=False):
     '''Function that does initial analysis of a single light curve and 
     tries to determine if it contains a transit by fitting the depth and
     the time, and doing a few extra checks. 
@@ -931,7 +951,8 @@ def transit_analysis(times, fluxes, duration, depth, show=False):
             transit = False
     
     if show:
-        print(f"Best fit transit with {sigma:.3f} sigma identified at {round(ttime, 3)} days with depth of {round(tdepth, 3)}%")
+        print(f"Best fit transit with {sigma:.3f} sigma identified at \
+              {round(ttime, 3)} days with depth of {round(tdepth, 3)}%")
         plot_fit(times, fluxes, ttime, tdepth, duration)
 
     return ttime, tdepth, sigma, transit
@@ -981,7 +1002,10 @@ def plot_toi_fits(datalist):
             period = trans[2]['period']
 
             ax = fig.add_subplot(rows, columns, i + 1)
-            ttime, tdepth, sigma, transit = transit_analysis(trans[0], trans[1], trans[2]['duration'], trans[2]['depth'], False)
+            ttime, tdepth, sigma, transit = transit_analysis(trans[0], trans[1], 
+                                                             trans[2]['duration'], 
+                                                             trans[2]['depth'], 
+                                                             False)
             
             ttimed.append(ttime)
             tsigmas.append(sigma)
@@ -993,7 +1017,8 @@ def plot_toi_fits(datalist):
                 transits.append(0)
             
             
-            ing, egr = (ttime - (trans[2]['duration'] / 2)), (ttime + (trans[2]['duration'] / 2))
+            ing, egr = (ttime - (trans[2]['duration'] / 2)), \
+                       (ttime + (trans[2]['duration'] / 2))
     
             baseline = []
             for j, time in enumerate(trans[0]):
@@ -1144,11 +1169,14 @@ def plot_toi_fits(datalist):
             title2 = (f"  {trans[2]['author']} - T: {ttime:.3f}, D: {tdepth:.3f}%, \u03C3: {sigma:.3f}")
             fig.suptitle(title + title2, size=10, y=1, fontweight='bold')
             
-        plt.text(.5, .01, 'Time (BJD-2457000)', transform=fig.transFigure, horizontalalignment='center')
-        plt.show()
-        print('')
+        plt.text(.5, .01, 'Time (BJD-2457000)', transform=fig.transFigure, 
+                 horizontalalignment='center')
+        #plt.show()
+        #print('')
         
-        if (yn == ' : Likely Transit : ') or (yn == ' : Possible Transit : ') or (abs(n - int(n)) < .03):
+        if ((yn == ' : Likely Transit : ') or 
+            (yn == ' : Possible Transit : ') or 
+            (abs(n - int(n)) < .03)):
             figure_list.append(fig)
 
     display_data = {"TESS Sector": sectors, 
@@ -1166,7 +1194,10 @@ def plot_toi_fits(datalist):
     
     return figure_list, df
 
-def create_pdf(figures, df, title, subtitle):
+def create_pdf(figures, 
+               df, 
+               title, 
+               subtitle):
     '''Creates the pdf output for main TOI analysis given a list of 
     light curve graphs, a dataframe with information about them, and
     two title strings.
@@ -1198,7 +1229,8 @@ def create_pdf(figures, df, title, subtitle):
     title_paragraph = Paragraph(title, title_style)
     elements.append(title_paragraph)
     
-    stitle = ParagraphStyle(name='stitle', fontSize=10, leading=12, alignment=1, spaceAfter=12,)
+    stitle = ParagraphStyle(name='stitle', fontSize=10, leading=12, 
+                            alignment=1, spaceAfter=12,)
     elements.append(Paragraph(subtitle, stitle))
     
     elements.append(Spacer(1, inch * 0.25))
@@ -1223,12 +1255,18 @@ def create_pdf(figures, df, title, subtitle):
     # Add pandas dataframe to PDF
     data = [df.columns[:,].tolist()] + df.values.tolist()
     table = Table(data)
-    table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-                               ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                               ('FONTSIZE', (0,0), (-1,0), 14), ('BOTTOMPADDING', (0,0), (-1,0), 12),
-                               ('BACKGROUND', (0,1), (-1,-1), colors.beige), ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
-                               ('FONTNAME', (0,1), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,1), (-1,-1), 10),
-                               ('ALIGN', (0,1), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), 
+                               ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                               ('ALIGN', (0,0), (-1,-1), 'CENTER'), 
+                               ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                               ('FONTSIZE', (0,0), (-1,0), 14), 
+                               ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                               ('BACKGROUND', (0,1), (-1,-1), colors.beige), 
+                               ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                               ('FONTNAME', (0,1), (-1,-1), 'Helvetica'), 
+                               ('FONTSIZE', (0,1), (-1,-1), 10),
+                               ('ALIGN', (0,1), (-1,-1), 'LEFT'), 
+                               ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                                ('GRID', (0,0), (-1,-1), 1, colors.black)]))
     elements.append(table)
 
@@ -1240,7 +1278,8 @@ def create_pdf(figures, df, title, subtitle):
     buffer.close()
     return pdf
 
-def toi_analysis(toi, fract):
+def toi_analysis(toi, 
+                 fract):
     '''Main shell function that starts the analysis functions and writes
     the results to a pdf. This is what is called from the execution file.
     
