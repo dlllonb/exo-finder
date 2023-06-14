@@ -10,6 +10,7 @@ def help():
     print("  predictor: starts the transit predictor")
     print("  plotter: starts the transit plotter")
     print("  curves: starts curve finder for a TOI")
+    print("  analyze: starts TOI curve analysis")
     print("")
 
 def transit_predictor():
@@ -316,6 +317,41 @@ def transit_curves():
         print("Program failed with given parameters.")
     return
      
+def transit_analysis():
+    print('-----------------------------------')
+    print('Produces analysis pdf of a given TOI looking specifically at the '+
+          'fractional periods down to specified fractional limit.')
+    print('-----------------------------------')
+
+    tid = -1
+    while tid == -1:
+        tid1 = input("TOI ID: ")
+        if tid1 == 'q' or tid1 == 'quit':
+            return
+        try: 
+            tid2 = float(tid1)
+            tid = tid2
+        except:
+            continue
+    
+    frac = -1
+    while frac == -1:
+        frac1 = input("Smallest fraction of given period to search: ")
+        if frac1 == 'q' or frac1 == 'quit':
+            return
+        try: 
+            frac2 = int(frac1)
+            frac = frac2
+        except:
+            continue
+    
+    try:
+        code.toi_analysis(tid, frac)
+        print(f"Output file {tid}.pdf generated.")
+    except:
+        print("Program failed with given parameters.")
+    return
+
 # main loop for the program overall 
 while True:
     command = input("c: ")
@@ -329,6 +365,9 @@ while True:
         transit_plotter()
     elif command == "curves":
         transit_curves()
+    elif command == "analyze":
+        transit_analysis()
     else:
         print("Unknown command... type help to see list.")
+
     
