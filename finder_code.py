@@ -29,9 +29,11 @@ from fractions import Fraction
 plt.style.use(astropy_mpl_style)
 matplotlib.rcParams["axes.formatter.useoffset"] = False
 warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+warnings.filterwarnings("ignore", message="More than 20 figures have been opened.*")
+
 quantity_support()
 PAGE_SIZE = landscape(letter)
-
 
 # Initialize Location and Data
 path = 'tessdata2.csv'
@@ -95,6 +97,15 @@ class TOI():
     def __str__(self):
         return f'TOI {self.name}'
     
+def toi_info(toi):
+    '''
+    '''
+    toi = TOI(toi)
+    print(f"Recorded info in TOI database for TOI {toi.name}: ")
+    for x in toi.infodict:
+        print(f'  {x} : {toi.infodict[x]}')
+    return
+
 # functions used for finding all upcoming TESS transits
 def earth_location(loc):
     '''Takes an inputted location coordinate set from exec

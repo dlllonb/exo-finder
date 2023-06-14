@@ -18,6 +18,7 @@ def help():
     print("Here is the list of commands:")
     print("  help : shows this page")
     print("  quit : quits the program")
+    print("  info: give info on specific TOI")
     print("  predictor: starts the transit predictor")
     print("  plotter: starts the transit plotter")
     print("  curves: starts curve finder for a TOI")
@@ -28,6 +29,28 @@ def help():
 help()
 
 # functions called from code file
+def info():
+    print('-----------------------------------')
+    print('Prints out info on a given TOI')
+    print('-----------------------------------')
+
+    tid = -1
+    while tid == -1:
+        tid1 = input("TOI ID: ")
+        if tid1 == 'q' or tid1 == 'quit':
+            return
+        try: 
+            tid2 = float(tid1)
+            tid = tid2
+        except:
+            continue
+    
+    try:
+        code.toi_info(tid)
+    except:
+        print("That is an invalid TOI number (probably).")
+    return
+
 def transit_predictor():
     print('-----------------------------------')
     print('Transit predictor gives possibly observabletransits with the given' +
@@ -378,6 +401,8 @@ while True:
         break
     elif command == "help":
         help()
+    elif command == 'info':
+        info()
     elif command == "predictor":
         transit_predictor()
     elif command == "plotter":
