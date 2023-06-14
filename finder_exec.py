@@ -294,7 +294,7 @@ def transit_plotter():
         print('Parameters are incompatible with program, please try again.')
         return
     
-    print('Output png generated.')
+    print("Output png 'transplot.png' generated.")
     return
 
 def transit_curves():
@@ -326,8 +326,9 @@ def transit_curves():
             continue
     
     try:
+        print("Searching...")
         code.toi_plot_curves(tid, frac)
-        print("Output file generated.")
+        print("Output file 'lightcurves.pdf' generated.")
     except:
         print("Program failed with given parameters.")
     return
