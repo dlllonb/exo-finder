@@ -4,13 +4,13 @@ import finder_code as code
 
 # intro
 print('')
-print("Welcome to the TESS exoplanet tool kit. Capabilities include predicting and " +
-       "plotting specific exoplanet transits for observation from the ground as " +
-       "well as retrieving plotting and analyzing the archival TESS data for a " +
-       "specific TOI. Additionally, all calculations have the option to include " +
-       "fractional pieces of the given orbital periods to aid in possible " +
-       "observation of missed transits, and reanalysis of past data in order to " +
-       "refine predictions for possible real periods especially with respect to " +
+print("Welcome to the TESS exoplanet tool kit. Capabilities include predicting and " 
+       "plotting specific exoplanet transits for observation from the ground as " 
+       "well as retrieving, plotting, and analyzing the archival TESS data for a " 
+       "specific TOI. Additionally, all calculations have the option to include " 
+       "fractional pieces of the given orbital periods to aid in possible " 
+       "observation of missed transits, and reanalysis of past data in order to " 
+       "refine predictions for possible real periods especially with respect to " 
        "long period planets. (V2.1 Dillon Bass, 6/14/23)")
 
 def help():
@@ -53,8 +53,8 @@ def info():
 
 def transit_predictor():
     print('-----------------------------------')
-    print('Transit predictor gives possibly observabletransits with the given' +
-          'parameters. Default settings show a few past transits. Make sure you' +
+    print('Transit predictor gives possibly observable transits with the given ' 
+          'parameters. Default settings show a few past transits. Make sure you ' 
           'know the correct JD date range. Type q at anytime to quit the program.')
     print('-----------------------------------')
     while True:
@@ -322,7 +322,7 @@ def transit_plotter():
 
 def transit_curves():
     print('-----------------------------------')
-    print('Produces a output pdf with light curves from the TESS database' +
+    print('Produces a output pdf with light curves from the TESS database ' 
           'for the given TOI, down to the given fractional period minimum.')
     print('-----------------------------------')
 
@@ -358,9 +358,9 @@ def transit_curves():
      
 def transit_analysis():
     print('-----------------------------------')
-    print('Produces analysis pdf of a given TOI looking specifically at the '+
-          'fractional periods down to specified fractional limit. Warning, ' +
-          'this process can take some time to run, and generate a lot of warnings ' +
+    print('Produces analysis pdf of a given TOI looking specifically at the '
+          'fractional periods down to specified fractional limit. Warning, ' 
+          'this process can take some time to run, and generate a lot of warnings ' 
           'depending on given parameters.')
     print('-----------------------------------')
 
@@ -386,12 +386,12 @@ def transit_analysis():
         except:
             continue
     
-    #try:
-    print("Analyzing...")
-    code.toi_analysis(tid, frac)
-    print(f"Output file {tid}.pdf generated.")
-    #except:
-        #print("Program failed with given parameters.")
+    try:
+        print("Analyzing...")
+        code.toi_analysis(tid, frac)
+        print(f"Output file {tid}.pdf generated.")
+    except:
+        print("Program failed with given parameters.")
     return
 
 # main loop for the program overall 
