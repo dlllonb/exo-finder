@@ -1,4 +1,4 @@
-# exo-finder
+# exo-finder  -  TESS Exoplanet Analysis
 Version 2.1.0 (June 2023) <br>
 Exoplanet analysis code for TESS data
 
