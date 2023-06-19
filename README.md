@@ -9,7 +9,7 @@ The main way to do this is rule out the scenario described above in which the TE
 
 One factor, however, is that the majority of the apparently long period planets in the TESS data are very likely not long period due to their transit durations. Generally, a longer period planet will have a longer transit duration, and as seen on the graph below, there are many TESS candidates that have suspiciously short durations for their reported orbital periods.
 ![image](./toigraph.png)
-The large clump of TOIs around 750 day periods is the main region in which it is fairly certain that the planets do not actually have such long periods. The transit durations are relatively short, and the cluster is not an underlying astrophysical phenomenon, it is simply the effect of the way TESS scans the sky. So, constraining the periods of these planets is the main goal of the code in this project. 
+The large clump of TOIs around 750 day periods is the main region in which it is fairly certain that the planets do not actually have such long periods. The transit durations are relatively short, and the cluster is not an underlying astrophysical phenomenon, it is simply an effect of the way TESS scans the sky. So, constraining the periods of these planets is the main goal of the code in this project. 
 
 #### Requirements:
 * Python environment with 'finder_code.py' and 'finder_exec.py' from this repo, and supporting packages.
