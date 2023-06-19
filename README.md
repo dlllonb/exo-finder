@@ -44,4 +44,4 @@ Once the program has been started by running the 'finder_exec.py' file, there ar
  
 #### Notes: 
 * There is a hidden command 'analysis' which preforms 'analyze' on all the long period planets in the dataset it can find, but it is not recommended to run this unless you have a very good computer, or hours to wait. Many pdfs will be generated in the working directory, but keep in mind that sometimes analyzing a single planet that happens to have a lot of data can take upwards of half an hour. 
-
+* This code was almsot entirely written for personal use on a specific project analyzing long period TOIs, so there may be some glitches or confusing bits. Email dillonjb@uchicago.edu for question and comments. 
