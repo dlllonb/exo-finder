@@ -394,6 +394,9 @@ def transit_analysis():
         print("Program failed with given parameters.")
     return
 
+def transits_all():
+    code.analyze_all_transits()
+
 # main loop for the program overall 
 while True:
     command = input("c: ")
@@ -411,6 +414,8 @@ while True:
         transit_curves()
     elif command == "analyze":
         transit_analysis()
+    elif command == "analysis":
+        transits_all()
     else:
         print("Unknown command... type help to see list.")
 

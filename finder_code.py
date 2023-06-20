@@ -10,6 +10,7 @@ import numpy as np
 import math
 import warnings
 import datetime
+import time
 import pandas as pd
 import os
 from IPython.display import display, Markdown
@@ -387,12 +388,18 @@ def save_df_to_pdf(df):
     # Add pandas dataframe to PDF
     data = [df.columns[:,].tolist()] + df.values.tolist()
     table = Table(data)
-    table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-                               ('ALIGN', (0,0), (-1,-1), 'CENTER'), ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                               ('FONTSIZE', (0,0), (-1,0), 14), ('BOTTOMPADDING', (0,0), (-1,0), 12),
-                               ('BACKGROUND', (0,1), (-1,-1), colors.beige), ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
-                               ('FONTNAME', (0,1), (-1,-1), 'Helvetica'), ('FONTSIZE', (0,1), (-1,-1), 10),
-                               ('ALIGN', (0,1), (-1,-1), 'LEFT'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    table.setStyle(TableStyle([('BACKGROUND', (0,0), (-1,0), colors.grey), 
+                               ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+                               ('ALIGN', (0,0), (-1,-1), 'CENTER'), 
+                               ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                               ('FONTSIZE', (0,0), (-1,0), 14), 
+                               ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                               ('BACKGROUND', (0,1), (-1,-1), colors.beige), 
+                               ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                               ('FONTNAME', (0,1), (-1,-1), 'Helvetica'), 
+                               ('FONTSIZE', (0,1), (-1,-1), 10),
+                               ('ALIGN', (0,1), (-1,-1), 'LEFT'), 
+                               ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                                ('GRID', (0,0), (-1,-1), 1, colors.black)]))
     
     elements.append(table)
@@ -1294,16 +1301,67 @@ def toi_analysis(toi,
         creates a pdf containing the analyzed information for the TOI
     '''
     #display(Markdown(f"<h2 style='text-align:center';>TOI {toi} at Fraction {fract}</h2>"))
+    print('Downloading and extracting light curve data...')
     x = toi_extract_all_curves(toi, fract)
     period = round(x[list(x.keys())[0]][0][2]['period'], 3)
     exptrans = [round(t, 3) for t in list(x.keys())]
-    #display(Markdown(f"<p style='text-align:center';>Given period of {period} days, with transits at: {exptrans} BJD-2457000</p>"))
+    #display(Markdown(f"<p style='text-align:center';>Given period of {period} days, 
+    # with transits at: {exptrans} BJD-2457000</p>"))
     
     subtitle = str(f"Given period of {period} days, with transits at: {exptrans} BJD-2457000")
     title = str(f"TOI {toi} at Fraction {fract}")  
+    print(f'Analyzing {len(exptrans)} light curves...')
+    st = time.time()
     figures, df = plot_toi_fits(x)
-    
+    et = time.time()
+    print(f'Analyzed {len(exptrans)} light curves in {et - st} seconds.')
     pdf = create_pdf(figures, df, title, subtitle)
     with open(f"{toi}.pdf", 'wb') as f:
         f.write(pdf)
     return
+
+def analyze_all_transits(data=DATA):
+    st = time.time()
+    count = 0
+    skip = 0
+    missed = []
+    start = 0
+    for toi in data['Full TOI ID']:
+        
+        # allow resuming at certain point in list
+        if toi == 1246.04:
+            start = 1
+        
+        # analyze rest of list
+        if start == 1:
+            try:
+                obj = TOI(toi)
+                period = obj.period
+                if period < 28:
+                    print(f'Skipping TOI {toi} with {period} day period.')
+                    skip += 1
+                    continue
+                fract = int(period / 14)
+                if fract > 20:
+                    fract = 20
+            except:
+                print(f'Failed (step 1) for TOI {toi}, skipping...')
+                missed.append(toi)
+                continue
+
+            try:
+                print(f'Analyzing TOI {toi} with {period} day period at {fract}th fraction...')
+                toi_analysis(toi, fract)
+                count += 1
+            except:
+                print(f'Failed (step 2) for TOI {toi}, skipping...')
+                missed.append(toi)
+
+    et = time.time()
+    rt = (et - st) / 60
+    print(f'Succesfully analyzed {count} TOIs.')
+    print(f'Skipped {skip} TOIs with short periods.') 
+    print(f'Program failed for TOIs: {missed}.')
+    print(f'Total runtime: {rt} minutes.')
+    return
+    
