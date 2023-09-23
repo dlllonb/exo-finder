@@ -39,9 +39,9 @@ Once the program has been started by running the 'finder_exec.py' file, there ar
   - This function also takes a fraction parameter to aid with analysis.
 * __'analyze'__ retrieves light curves for a given TOI and fraction, and preforms an analysis using some basic statistics and modelling to try and identify transits.
   - Generates output pdf showing analyzed light curves including transits at the given period of the TOI and fractional period curves which were identified as possible transits.
-  - The analysis and identification of transits is prone to errors, especially when the underlying data isn't very clean.
+  - The analysis and identification of transits is prone to errors when the underlying data isn't very clean.
   - Output pdf contains a dataframe that shows every single analyzed light curve, and the results of the analysis algorithm for that curve.
  
 #### Notes: 
 * There is a hidden command 'analysis' which preforms 'analyze' on all the long period planets in the dataset it can find, but it is not recommended to run this unless you have a very good computer, or hours to wait. Many pdfs will be generated in the working directory, but keep in mind that sometimes analyzing a single planet that happens to have a lot of data can take upwards of half an hour. 
-* This code was almsot entirely written for personal use on a specific project analyzing long period TOIs, so there may be some glitches or confusing bits. Email dillonjb@uchicago.edu for question and comments. 
+* This code was almost entirely written for personal use on a specific project analyzing long period TOIs, so there may be some glitches or confusing bits. Email dillonjb@uchicago.edu for question and comments. 
